@@ -1,14 +1,7 @@
-//
-//  ViewController.swift
-//  Iris
-//
-//  Created by jolteon on 7/1/25.
-//
-
 import UIKit
 import WebKit
 
-class ViewController: UIViewController {
+class RootViewController: UIViewController {
 
 	private let webView = WKWebView()
 	private let addressBar = UITextField()
@@ -56,16 +49,16 @@ class ViewController: UIViewController {
 
 // MARK: - User Actions
 
-extension ViewController {
+extension RootViewController {
 	func didSubmitAddressBar(withURL url: URL) {
 		webView.load(URLRequest(url: url))
 		addressBar.text = url.absoluteString.lowercased()
 	}
 }
 
-// MARK: - ViewController + UITextFieldDelegate
+// MARK: - RootViewController + UITextFieldDelegate
 
-extension ViewController: UITextFieldDelegate {
+extension RootViewController: UITextFieldDelegate {
 	func textFieldShouldReturn(_ textField: UITextField) -> Bool {
 		//
 		guard var text = textField.text?.lowercased() else { return false }
@@ -82,7 +75,7 @@ extension ViewController: UITextFieldDelegate {
 	}
 }
 
-extension ViewController: WKNavigationDelegate {
+extension RootViewController: WKNavigationDelegate {
 	func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
 		if let url = webView.url {
 			addressBar.text = url.absoluteString.lowercased()
