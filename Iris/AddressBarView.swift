@@ -5,63 +5,40 @@ protocol AddressBarViewDelegate: AnyObject {
 }
 
 final class AddresssBarView: UIView {
-	private let capsuleBackground = UIVisualEffectView(effect: UIGlassEffect())
-
-	private let textField = UITextField()
-	private var textFieldWidthConstraint: NSLayoutConstraint? = nil
-
-	weak var delegate: (any AddressBarViewDelegate)?
+	// MARK: Public
 
 	var text: String? {
 		get { self.textField.text }
 		set { self.textField.text = newValue }
 	}
 
+	// MARK: Delegate
+
+	weak var delegate: (any AddressBarViewDelegate)?
+
+	// MARK: Subviews
+
+	private let capsuleBackground = UIVisualEffectView(effect: UIGlassEffect())
+	private let textField = UITextField()
+
+	// MARK: Initialization
+
 	override init(frame: CGRect) {
 		super.init(frame: frame)
-
-		self.isUserInteractionEnabled = true
-
-		addSubview(self.capsuleBackground)
-		self.capsuleBackground.contentView.addSubview(self.textField)
-
-		self.capsuleBackground.translatesAutoresizingMaskIntoConstraints = false
-		self.capsuleBackground.isUserInteractionEnabled = true
-
-		self.textField.translatesAutoresizingMaskIntoConstraints = false
-		self.textField.returnKeyType = .go
-		self.textField.autocapitalizationType = .none
-		self.textField.autocorrectionType = .no
-		self.textField.textAlignment = .center
-		self.textField.delegate = self
-
-		let idealHeightConstraint = self.capsuleBackground.heightAnchor.constraint(equalToConstant: 50)
-		idealHeightConstraint.priority = .defaultHigh
-		let minimumHeightConstraint = self.capsuleBackground.heightAnchor.constraint(greaterThanOrEqualToConstant: 50)
-		NSLayoutConstraint.activate([
-			self.capsuleBackground.leadingAnchor.constraint(equalTo: leadingAnchor),
-			self.capsuleBackground.trailingAnchor.constraint(equalTo: trailingAnchor),
-			self.capsuleBackground.bottomAnchor.constraint(equalTo: bottomAnchor),
-			idealHeightConstraint,
-			minimumHeightConstraint,
-			self.textField.centerXAnchor.constraint(equalTo: self.capsuleBackground.centerXAnchor),
-			self.textField.centerYAnchor.constraint(equalTo: self.capsuleBackground.centerYAnchor),
-			self.textField.heightAnchor.constraint(equalTo: self.capsuleBackground.heightAnchor, constant: -8),
-		])
-		self.textFieldWidthConstraint = self.textField.widthAnchor.constraint(
-			equalTo: self.capsuleBackground.widthAnchor,
-			constant: -50
-		)
-		self.textFieldWidthConstraint?.isActive = true
+		setUpViews()
+		setUpConstraints()
 	}
 
 	override func layoutSubviews() {
 		super.layoutSubviews()
 		self.capsuleBackground.layer.cornerRadius = bounds.height / 2
-		self.textFieldWidthConstraint?.constant = bounds.height
 	}
 
 	override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+		/*
+		 We want to ensure that any tap on the visible portion of this view (that is, anything within the capsule) gets
+		 picked up by the text field.
+		 */
 		let convertedPoint = convert(point, to: capsuleBackground)
 		if self.capsuleBackground.bounds.contains(convertedPoint) {
 			return self.textField
@@ -75,7 +52,51 @@ final class AddresssBarView: UIView {
 	}
 }
 
-// MARK: AddressBarView + UITextFieldDelegate
+// MARK: - Private Helpers
+
+extension AddresssBarView {
+	func setUpViews() {
+		addSubview(self.capsuleBackground)
+		self.capsuleBackground.contentView.addSubview(self.textField)
+
+		self.capsuleBackground.translatesAutoresizingMaskIntoConstraints = false
+
+		self.textField.translatesAutoresizingMaskIntoConstraints = false
+		self.textField.returnKeyType = .go
+		self.textField.autocapitalizationType = .none
+		self.textField.autocorrectionType = .no
+		self.textField.textAlignment = .center
+		self.textField.delegate = self
+	}
+
+	func setUpConstraints() {
+		// We define the ideal height constraint outside the array below so we can control its priority
+		let idealHeight = 50.0
+		let idealHeightConstraint = self.capsuleBackground.heightAnchor.constraint(equalToConstant: idealHeight)
+		idealHeightConstraint.priority = .defaultHigh
+		NSLayoutConstraint.activate([
+			// background constraints
+			self.capsuleBackground.leadingAnchor.constraint(equalTo: leadingAnchor),
+			self.capsuleBackground.trailingAnchor.constraint(equalTo: trailingAnchor),
+			self.capsuleBackground.bottomAnchor.constraint(equalTo: bottomAnchor),
+			self.capsuleBackground.heightAnchor.constraint(greaterThanOrEqualToConstant: idealHeight),
+			idealHeightConstraint,
+
+			// text field constraints
+			self.textField.centerXAnchor.constraint(equalTo: self.capsuleBackground.centerXAnchor),
+			self.textField.centerYAnchor.constraint(equalTo: self.capsuleBackground.centerYAnchor),
+			self.textField.heightAnchor.constraint(equalTo: self.capsuleBackground.heightAnchor, constant: -8),
+			/*
+			 TODO: Update this widthAnchor constraint to scale nicely with dynamic type.
+			 We want to prevent the text field from going into the rounded part of the capsule but, as written, this
+			 will only work if the capsule background is at the ideal height (i.e. at the default font size or smaller).
+			 */
+			self.textField.widthAnchor.constraint(equalTo: self.capsuleBackground.widthAnchor, constant: -idealHeight),
+		])
+	}
+}
+
+// MARK: - AddressBarView + UITextFieldDelegate
 
 extension AddresssBarView: UITextFieldDelegate {
 	func textFieldShouldReturn(_ textField: UITextField) -> Bool {
