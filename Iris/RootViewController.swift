@@ -50,7 +50,7 @@ class RootViewController: UIViewController {
 extension RootViewController: AddressBarViewDelegate {
 	func addressBarView(_ addressBarView: AddresssBarView, didSubmit url: URL) {
 		self.webView.load(URLRequest(url: url))
-		self.addressBar.text = url.absoluteString.lowercased()
+		addressBarView.text = url.absoluteString.lowercased()
 	}
 }
 
