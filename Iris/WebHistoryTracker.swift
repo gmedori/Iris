@@ -1,11 +1,7 @@
 import Foundation
 
 final class WebHistoryTracker {
-	private(set) var visitedURLs: [URL] = [] {
-		didSet {
-			print("Current History: \(visitedURLs)")
-		}
-	}
+	private(set) var visitedURLs: [URL] = []
 	private(set) var currentURLPosition: [URL].Index = 0
 
 	var currentURL: URL? { visitedURLs[safe: currentURLPosition] }

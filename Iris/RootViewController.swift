@@ -33,18 +33,12 @@ class RootViewController: UIViewController {
 extension RootViewController {
 	@objc
 	func goBack() {
-		if let url = webHistoryTracker.goBack() {
-			addressBar.text = url.absoluteString.lowercased()
-			webView.load(URLRequest(url: url))
-		}
+		print("\nGoing Back")
 	}
 
 	@objc
 	func goForward() {
-		if let url = webHistoryTracker.goForward() {
-			addressBar.text = url.absoluteString.lowercased()
-			webView.load(URLRequest(url: url))
-		}
+		print("\nGoing Forward")
 	}
 
 	@objc
@@ -57,7 +51,7 @@ extension RootViewController {
 	private func setUpViews() {
 		webView.translatesAutoresizingMaskIntoConstraints = false
 		webView.navigationDelegate = self
-		let initialURL = URL(string: "https://thebrowser.company")!
+		let initialURL = URL(string: "https://apple.com/")!
 		webView.load(URLRequest(url: initialURL))
 
 		toolbar.translatesAutoresizingMaskIntoConstraints = false
@@ -115,7 +109,7 @@ extension RootViewController {
 
 extension RootViewController: AddressBarViewDelegate {
 	func addressBarView(_ addressBarView: AddresssBarView, didSubmit url: URL) {
-		webView.load(URLRequest(url: url))
+		webView.load(URLRequest(url: url, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData))
 		addressBarView.text = url.absoluteString.lowercased()
 	}
 }
@@ -127,8 +121,10 @@ extension RootViewController: WKNavigationDelegate {
 		// TODO: Add a loading indicator
 	}
 
-	func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
-		guard let url = webView.url else { return }
+	func webView(_ webView: WKWebView, decidePolicyFor navigationResponse: WKNavigationResponse) async -> WKNavigationResponsePolicy {
+		guard let url = webView.url else { return .allow }
+//		print("\nDeciding policy for nav response: \(url)")
+
 		addressBar.text = url.absoluteString.lowercased()
 
 		/*
@@ -136,11 +132,15 @@ extension RootViewController: WKNavigationDelegate {
 		 In particular, manipulating webHistoryTracker.currentURL happens instantaneously, while checking it as we do
 		 here only happens when we begin to receive a response from the server.
 
-		 A solution would likely involve associating a history manipulation with a particular WKNavigation, or something
-		 along those lines. Well beyond the scope of this toy project.
+		 A solution would likely involve some kind of data modeling exercise such that we would be able to know what
+		 kind of navigation action caused us to arrive at this particular line of code (e.g. the user hitting the back
+		 button vs. the user clicking a link).
 		 */
+//		print("Pre--visit: \(webHistoryTracker.visitedURLs)")
 		if url != webHistoryTracker.currentURL {
 			webHistoryTracker.visited(url: url)
 		}
+//		print("Post-visit: \(webHistoryTracker.visitedURLs)")
+		return .allow
 	}
 }
