@@ -102,6 +102,27 @@ extension RootViewController {
 		)
 		addressBarBottomConstraint?.isActive = true
 	}
+
+	private func updateAddressBarText(from url: URL?) {
+		guard let url else { return }
+		addressBar.text = url.absoluteString
+	}
+
+	private func updateForwardBackButtons(from webView: WKWebView) {
+		backButton?.menu = UIMenu(children: webView.backForwardList.backList.map { backListItem in
+			UIAction(title: backListItem.title ?? backListItem.url.absoluteString) { _ in
+				webView.go(to: backListItem)
+			}
+		})
+		backButton?.isEnabled = webView.canGoBack
+
+		forwardButton?.menu = UIMenu(children: webView.backForwardList.forwardList.map { forwardListItem in
+			UIAction(title: forwardListItem.title ?? forwardListItem.url.absoluteString) { _ in
+				webView.go(to: forwardListItem)
+			}
+		})
+		forwardButton?.isEnabled = webView.canGoForward
+	}
 }
 
 // MARK: - RootViewController + AddressBarViewDelegate
@@ -109,7 +130,7 @@ extension RootViewController {
 extension RootViewController: AddressBarViewDelegate {
 	func addressBarView(_ addressBarView: AddresssBarView, didSubmit url: URL) {
 		webView.load(URLRequest(url: url, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData))
-		addressBarView.text = url.absoluteString.lowercased()
+		updateAddressBarText(from: url)
 	}
 }
 
@@ -120,19 +141,11 @@ extension RootViewController: WKNavigationDelegate {
 		// TODO: Add a loading indicator
 	}
 
-	func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
-		if let url = webView.url {
-			addressBar.text = url.absoluteString.lowercased()
-		}
-	}
-
 	func webView(
 		_ webView: WKWebView,
 		decidePolicyFor navigationAction: WKNavigationAction
 	) async -> WKNavigationActionPolicy {
-		if let url = webView.url {
-			addressBar.text = url.absoluteString.lowercased()
-		}
+		updateAddressBarText(from: webView.url)
 		return .allow
 	}
 
@@ -141,14 +154,11 @@ extension RootViewController: WKNavigationDelegate {
 		shouldGoTo backForwardListItem: WKBackForwardListItem,
 		willUseInstantBack: Bool
 	) async -> Bool {
-		if let url = webView.url {
-			addressBar.text = url.absoluteString.lowercased()
-		}
+		updateAddressBarText(from: webView.url)
 		return true
 	}
 
 	func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-		backButton?.isEnabled = webView.canGoBack
-		forwardButton?.isEnabled = webView.canGoForward
+		updateForwardBackButtons(from: webView)
 	}
 }
