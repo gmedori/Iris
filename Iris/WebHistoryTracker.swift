@@ -1,10 +1,14 @@
 import Foundation
 
 final class WebHistoryTracker {
-	private(set) var visitedURLs: [URL] = [URL(string: "https://thebrowser.company")!]
+	private(set) var visitedURLs: [URL] = [] {
+		didSet {
+			print("Current History: \(visitedURLs)")
+		}
+	}
 	private(set) var currentURLPosition: [URL].Index = 0
 
-	var currentURL: URL { visitedURLs[currentURLPosition] }
+	var currentURL: URL? { visitedURLs[safe: currentURLPosition] }
 
 	func visited(url: URL) {
 		// Handle the edge case where our current URL cursor has somehow been misplaced
@@ -16,7 +20,9 @@ final class WebHistoryTracker {
 		 where you tap the "back" button several times, then click on a new link. You can no longer go forward in your
 		 history.
 		 */
-		visitedURLs.removeSubrange(visitedURLs.index(after: currentURLPosition) ..< visitedURLs.endIndex)
+		if currentURLPosition < visitedURLs.endIndex {
+			visitedURLs.removeSubrange(visitedURLs.index(after: currentURLPosition) ..< visitedURLs.endIndex)
+		}
 		visitedURLs.append(url)
 		currentURLPosition = visitedURLs.index(before: visitedURLs.endIndex)
 	}
