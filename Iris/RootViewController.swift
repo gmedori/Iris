@@ -18,9 +18,35 @@ class RootViewController: UIViewController {
 	override func viewDidLoad() {
 		super.viewDidLoad()
 
+		setUpViews()
+		setUpConstraints()
+	}
+
+}
+
+// MARK: - User Actions
+
+extension RootViewController {
+	@objc
+	func goBack() {}
+
+	@objc
+	func goForward() {}
+
+	@objc
+	func showTabs() {}
+}
+
+// MARK: - Private Helpers
+
+extension RootViewController {
+	private func setUpViews() {
 		self.webView.translatesAutoresizingMaskIntoConstraints = false
 		self.webView.navigationDelegate = self
+		let initialURL = URL(string: "https://thebrowser.company")!
+		self.webView.load(URLRequest(url: initialURL))
 
+		self.toolbar.translatesAutoresizingMaskIntoConstraints = false
 		self.toolbar.items = [
 			UIBarButtonItem(
 				title: "Go Back",
@@ -32,21 +58,22 @@ class RootViewController: UIViewController {
 				title: "Go Forward",
 				image: UIImage(systemName: "chevron.right"),
 				target: nil,
-				action: #selector(self.goBack)
+				action: #selector(self.goForward)
 			),
 			UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil),
 			UIBarButtonItem(
 				title: "Show Tabs",
 				image: UIImage(systemName: "square.on.square"),
 				target: nil,
-				action: #selector(self.goBack)
+				action: #selector(self.showTabs)
 			),
 		]
-		self.toolbar.translatesAutoresizingMaskIntoConstraints = false
 
 		self.addressBar.translatesAutoresizingMaskIntoConstraints = false
 		self.addressBar.delegate = self
+	}
 
+	private func setUpConstraints() {
 		NSLayoutConstraint.activate([
 			// Web View
 			self.webView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
@@ -67,14 +94,7 @@ class RootViewController: UIViewController {
 			constant: -20
 		)
 		self.addressBarBottomConstraint?.isActive = true
-
-		let myURL = URL(string: "https://thebrowser.company")
-		let myRequest = URLRequest(url: myURL!)
-		self.webView.load(myRequest)
 	}
-
-	@objc
-	func goBack() {}
 }
 
 // MARK: - RootViewController + AddressBarViewDelegate
@@ -89,6 +109,10 @@ extension RootViewController: AddressBarViewDelegate {
 // MARK: - RootViewController + WKNavigationDelegate
 
 extension RootViewController: WKNavigationDelegate {
+	func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+		// TODO: Add a loading indicator
+	}
+
 	func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
 		if let url = webView.url {
 			self.addressBar.text = url.absoluteString.lowercased()
