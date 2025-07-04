@@ -7,11 +7,9 @@ class RootViewController: UIViewController {
 	private let webView = WKWebView()
 	private let toolbar = UIToolbar()
 	private let addressBar = AddresssBarView()
+	private var backButton: UIBarButtonItem?
+	private var forwardButton: UIBarButtonItem?
 	private var addressBarBottomConstraint: NSLayoutConstraint? = nil
-
-	// MARK: Feature Controllers
-
-	private let webHistoryTracker = WebHistoryTracker()
 
 	override func loadView() {
 		view = UIView()
@@ -32,16 +30,6 @@ class RootViewController: UIViewController {
 
 extension RootViewController {
 	@objc
-	func goBack() {
-		print("\nGoing Back")
-	}
-
-	@objc
-	func goForward() {
-		print("\nGoing Forward")
-	}
-
-	@objc
 	func showTabs() {}
 }
 
@@ -49,34 +37,45 @@ extension RootViewController {
 
 extension RootViewController {
 	private func setUpViews() {
+		// Web View
 		webView.translatesAutoresizingMaskIntoConstraints = false
 		webView.navigationDelegate = self
 		let initialURL = URL(string: "https://apple.com/")!
 		webView.load(URLRequest(url: initialURL))
 
+		// Toolbar Buttons
+		let backButton = UIBarButtonItem(
+			title: "Go Back",
+			image: UIImage(systemName: "chevron.left"),
+			target: webView,
+			action: #selector(webView.goBack)
+		)
+		backButton.isEnabled = webView.canGoBack
+		self.backButton = backButton
+		let forwardButton = UIBarButtonItem(
+			title: "Go Forward",
+			image: UIImage(systemName: "chevron.right"),
+			target: webView,
+			action: #selector(webView.goForward)
+		)
+		forwardButton.isEnabled = webView.canGoForward
+		self.forwardButton = forwardButton
+
+		// Toolbar
 		toolbar.translatesAutoresizingMaskIntoConstraints = false
 		toolbar.items = [
-			UIBarButtonItem(
-				title: "Go Back",
-				image: UIImage(systemName: "chevron.left"),
-				target: nil,
-				action: #selector(goBack)
-			),
-			UIBarButtonItem(
-				title: "Go Forward",
-				image: UIImage(systemName: "chevron.right"),
-				target: nil,
-				action: #selector(goForward)
-			),
+			backButton,
+			forwardButton,
 			UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil),
 			UIBarButtonItem(
 				title: "Show Tabs",
 				image: UIImage(systemName: "square.on.square"),
-				target: nil,
+				target: self,
 				action: #selector(showTabs)
 			),
 		]
 
+		// Address Bar
 		addressBar.translatesAutoresizingMaskIntoConstraints = false
 		addressBar.delegate = self
 	}
@@ -121,26 +120,35 @@ extension RootViewController: WKNavigationDelegate {
 		// TODO: Add a loading indicator
 	}
 
-	func webView(_ webView: WKWebView, decidePolicyFor navigationResponse: WKNavigationResponse) async -> WKNavigationResponsePolicy {
-		guard let url = webView.url else { return .allow }
-//		print("\nDeciding policy for nav response: \(url)")
-
-		addressBar.text = url.absoluteString.lowercased()
-
-		/*
-		 TODO: Fix the race condition that can happen if forward/back navigation is done before loading is complete.
-		 In particular, manipulating webHistoryTracker.currentURL happens instantaneously, while checking it as we do
-		 here only happens when we begin to receive a response from the server.
-
-		 A solution would likely involve some kind of data modeling exercise such that we would be able to know what
-		 kind of navigation action caused us to arrive at this particular line of code (e.g. the user hitting the back
-		 button vs. the user clicking a link).
-		 */
-//		print("Pre--visit: \(webHistoryTracker.visitedURLs)")
-		if url != webHistoryTracker.currentURL {
-			webHistoryTracker.visited(url: url)
+	func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
+		if let url = webView.url {
+			addressBar.text = url.absoluteString.lowercased()
 		}
-//		print("Post-visit: \(webHistoryTracker.visitedURLs)")
+	}
+
+	func webView(
+		_ webView: WKWebView,
+		decidePolicyFor navigationAction: WKNavigationAction
+	) async -> WKNavigationActionPolicy {
+		if let url = webView.url {
+			addressBar.text = url.absoluteString.lowercased()
+		}
 		return .allow
+	}
+
+	func webView(
+		_ webView: WKWebView,
+		shouldGoTo backForwardListItem: WKBackForwardListItem,
+		willUseInstantBack: Bool
+	) async -> Bool {
+		if let url = webView.url {
+			addressBar.text = url.absoluteString.lowercased()
+		}
+		return true
+	}
+
+	func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+		backButton?.isEnabled = webView.canGoBack
+		forwardButton?.isEnabled = webView.canGoForward
 	}
 }
