@@ -29,11 +29,6 @@ final class AddresssBarView: UIView {
 		setUpConstraints()
 	}
 
-	override func layoutSubviews() {
-		super.layoutSubviews()
-		self.capsuleBackground.layer.cornerRadius = bounds.height / 2
-	}
-
 	override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
 		/*
 		 We want to ensure that any tap on the visible portion of this view (that is, anything within the capsule) gets
