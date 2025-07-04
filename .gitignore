@@ -1,0 +1,10 @@
+# Xcode user settings
+xcuserdata/
+
+# Build artifacts
+build/
+DerivedData/
+
+# Debug symbols
+*.dSYM.zip
+*.dSYM
