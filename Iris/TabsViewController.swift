@@ -13,11 +13,8 @@ final class TabsViewController: UICollectionViewController {
 
 	init(tabsModel: TabsModel) {
 		self.tabsModel = tabsModel
-		super.init(
-			collectionViewLayout: UICollectionViewCompositionalLayout.list(
-				using: UICollectionLayoutListConfiguration(appearance: .grouped)
-			)
-		)
+		let listConfig = UICollectionLayoutListConfiguration(appearance: .insetGrouped)
+		super.init(collectionViewLayout: UICollectionViewCompositionalLayout.list(using: listConfig))
 	}
 
 	@available(*, unavailable)
@@ -65,14 +62,37 @@ extension TabsViewController {
 					Text(tab.name)
 						.frame(maxWidth: .infinity, alignment: .leading)
 					if isCurrentTab {
-						Image(systemName: "checkmark.circle.fill")
+						Image(systemName: "checkmark")
+							.fontWeight(.black)
 							.foregroundStyle(.green)
+							.transition(.symbolEffect(.drawOn))
 					}
 				}
-				Text(tab.url.absoluteString)
+				Text(tab.url?.absoluteString ?? "")
 					.font(.caption)
 					.foregroundStyle(.secondary)
 			}
+		}
+	}
+}
+
+// MARK: - TabsViewController + UICollectionViewControllerDelegate
+
+extension TabsViewController {
+	override func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+		guard let item = dataSource.itemIdentifier(for: indexPath) else {
+			print("ERROR: Selected an item that does not exist at index path: \(indexPath)")
+			return
+		}
+
+		switch item {
+			case let .tab(tab):
+				if tabsModel.currentTab != tab {
+					tabsModel.switchTabs(to: tab)
+					var snapshot = dataSource.snapshot()
+					snapshot.reconfigureItems(snapshot.itemIdentifiers)
+					dataSource.apply(snapshot, animatingDifferences: true)
+				}
 		}
 	}
 }
@@ -86,6 +106,7 @@ extension TabsViewController {
 				cell.contentConfiguration = UIHostingConfiguration {
 					TabCellView(tab: tab, isCurrentTab: tabsModel.currentTab == tab)
 				}
+				cell.backgroundColor = .systemBackground
 		}
 	}
 }
