@@ -36,6 +36,7 @@ final class TabsViewController: UICollectionViewController {
 
 extension TabsViewController {
 	nonisolated enum Section: Sendable, Hashable {
+		/// Unused - was thinking of using `category` case to try implementing the "Tidy Tabs" feature in Arc.
 		case category(String)
 		case uncategorized
 	}
@@ -44,6 +45,8 @@ extension TabsViewController {
 		case tab(Tab)
 	}
 
+	/// The only bit of SwiftUI in this little app. UICollectionView for performance and flexibility, SwiftUI for ease
+	/// of iteration. Best of both worlds.
 	struct TabCellView: View {
 		let tab: Tab
 		let isCurrentTab: Bool
