@@ -27,16 +27,8 @@ final class TabsViewController: UICollectionViewController {
 	override func viewDidLoad() {
 		super.viewDidLoad()
 		navigationItem.title = "Tabs"
-		let cellRegistration = UICollectionView.CellRegistration<UICollectionViewCell, Item> {
-			[weak self] cell, indexPath, item in
-			guard let self else { return }
-			configure(cell: cell, indexPath: indexPath, item: item)
-		}
-		dataSource = UICollectionViewDiffableDataSource(collectionView: collectionView) {
-			collectionView, indexPath, item in
-			collectionView.dequeueConfiguredReusableCell(using: cellRegistration, for: indexPath, item: item)
-		}
-		dataSource.apply(.init(model: tabsModel), animatingDifferences: true)
+		setUpCollectionView()
+		setUpAddButton()
 	}
 }
 
@@ -76,7 +68,7 @@ extension TabsViewController {
 	}
 }
 
-// MARK: - TabsViewController + UICollectionViewControllerDelegate
+// MARK: - User Actions
 
 extension TabsViewController {
 	override func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
@@ -91,15 +83,75 @@ extension TabsViewController {
 					tabsModel.switchTabs(to: tab)
 					var snapshot = dataSource.snapshot()
 					snapshot.reconfigureItems(snapshot.itemIdentifiers)
-					dataSource.apply(snapshot, animatingDifferences: true)
+					/*
+					 TODO: Identify why the animation gets clipped sometimes.
+					 Sometimes, when you switch tabs, the view dismissed before you can see the checkmark animation,
+					 while other times can see the animation clearly. I thought I noticed it when switching to tabs
+					 with real web pages rather than empty tabs.
+					 */
+					dataSource.apply(snapshot, animatingDifferences: true) { [weak self] in
+						self?.dismiss(animated: true)
+					}
 				}
 		}
+	}
+
+	@objc
+	private func addTabTapped() {
+		tabsModel.addNewtab()
+		dismiss(animated: true)
 	}
 }
 
 // MARK: - Private Helpers
 
 extension TabsViewController {
+	private func setUpAddButton() {
+		let backgroundView = UIView()
+		backgroundView.translatesAutoresizingMaskIntoConstraints = false
+		backgroundView.backgroundColor = view.backgroundColor
+		view.addSubview(backgroundView)
+
+		let button = UIButton(type: .system)
+		button.translatesAutoresizingMaskIntoConstraints = false
+		let plusImageConfig = UIImage.SymbolConfiguration(font: UIFont(
+			descriptor: UIFont.preferredFont(forTextStyle: .title2).fontDescriptor.withSymbolicTraits(.traitBold)!,
+			size: 0
+		))
+		button.setImage(UIImage(systemName: "plus", withConfiguration: plusImageConfig), for: .normal)
+		button.addTarget(self, action: #selector(addTabTapped), for: .touchUpInside)
+		button.configuration = .prominentGlass()
+		button.tintColor = .systemGreen
+		backgroundView.addSubview(button)
+
+		NSLayoutConstraint.activate([
+			// Background view
+			backgroundView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+			backgroundView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+			backgroundView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
+
+			// Button
+			button.centerXAnchor.constraint(equalTo: backgroundView.centerXAnchor),
+			button.topAnchor.constraint(equalTo: backgroundView.topAnchor, constant: 20),
+			button.bottomAnchor.constraint(equalTo: backgroundView.bottomAnchor, constant: -20),
+			button.leadingAnchor.constraint(equalTo: backgroundView.leadingAnchor, constant: 20),
+			button.trailingAnchor.constraint(equalTo: backgroundView.trailingAnchor, constant: -20),
+		])
+	}
+
+	private func setUpCollectionView() {
+		let cellRegistration = UICollectionView.CellRegistration<UICollectionViewCell, Item> {
+			[weak self] cell, indexPath, item in
+			guard let self else { return }
+			configure(cell: cell, indexPath: indexPath, item: item)
+		}
+		dataSource = UICollectionViewDiffableDataSource(collectionView: collectionView) {
+			collectionView, indexPath, item in
+			collectionView.dequeueConfiguredReusableCell(using: cellRegistration, for: indexPath, item: item)
+		}
+		dataSource.apply(.init(model: tabsModel), animatingDifferences: true)
+	}
+
 	private func configure(cell: UICollectionViewCell, indexPath: IndexPath, item: Item) {
 		switch item {
 			case let .tab(tab):

@@ -2,7 +2,7 @@ import UIKit
 import WebKit
 
 class RootViewController: UIViewController {
-	// MARK: Modesl
+	// MARK: Models
 
 	private let tabsModel = TabsModel()
 
@@ -24,7 +24,7 @@ class RootViewController: UIViewController {
 
 	override func viewDidLoad() {
 		super.viewDidLoad()
-
+		tabsModel.delegate = self
 		setUpViews()
 		setUpConstraints()
 	}
