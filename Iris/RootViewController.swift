@@ -2,6 +2,10 @@ import UIKit
 import WebKit
 
 class RootViewController: UIViewController {
+	// MARK: Modesl
+
+	private let tabsModel = TabsModel()
+
 	// MARK: Subviews
 
 	private let webView = WKWebView()
@@ -30,7 +34,11 @@ class RootViewController: UIViewController {
 
 extension RootViewController {
 	@objc
-	func showTabs() {}
+	func showTabs() {
+		let tabsViewController = TabsViewController(tabsModel: tabsModel)
+		let navController = UINavigationController(rootViewController: tabsViewController)
+		present(navController, animated: true)
+	}
 }
 
 // MARK: - Private Helpers
@@ -109,6 +117,12 @@ extension RootViewController {
 	}
 
 	private func updateForwardBackButtons(from webView: WKWebView) {
+		/*
+		 TODO: Identify the source of inconsistency with the isEnabled status on these buttons
+		 It doesn't take much fiddling to tap on the back or forward buttons and reach a state that doesn't make sense.
+		 For example, I just tried going to a website, then a second website. I hit the back button to go back to the
+		 first website, and the back button was still enabled, while the forward button was not.
+		 */
 		backButton?.menu = UIMenu(children: webView.backForwardList.backList.map { backListItem in
 			UIAction(title: backListItem.title ?? backListItem.url.absoluteString) { _ in
 				webView.go(to: backListItem)
@@ -159,6 +173,22 @@ extension RootViewController: WKNavigationDelegate {
 	}
 
 	func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+		if let name = webView.title, let url = webView.url {
+			tabsModel.updateCurrentTab(name: name, url: url)
+		}
 		updateForwardBackButtons(from: webView)
+	}
+}
+
+// MARK: - RootViewController + TabsModelDelegate
+
+extension RootViewController: TabsModelDelegate {
+	func tabsModel(_ tabsModel: TabsModel, didSwitchTabs newTab: Tab) {
+		switch newTab.content {
+			case .empty:
+				webView.loadHTMLString("<html><body></body></html>", baseURL: nil)
+			case let .page(_, url):
+				webView.load(URLRequest(url: url))
+		}
 	}
 }
